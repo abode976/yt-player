@@ -3,49 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="referrer" content="strict-origin-when-cross-origin">
-    <title>Media Player</title>
+    <title>YouTube Player</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        html, body {
-            width: 100%;
-            height: 100%;
-            background-color: #000;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        #player {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-        iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
+        #player { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
     <div id="player"></div>
+
     <script>
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        var player;
         const params = new URLSearchParams(window.location.search);
         const videoId = params.get('v');
-        if (videoId) {
-            document.getElementById('player').innerHTML = 
-                `<iframe src="https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&controls=1&rel=0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
+
+        function onYouTubeIframeAPIReady() {
+            if (!videoId) return;
+            player = new YT.Player('player', {
+                videoId: videoId,
+                playerVars: {
+                    'autoplay': 1,
+                    'controls': 1,
+                    'rel': 0,
+                    'enablejsapi': 1
+                },
+                events: {
+                    'onReady': onPlayerReady
+                }
+            });
         }
+
+        function onPlayerReady(event) {
+            event.target.playVideo();
+            checkAction();
+        }
+
+        function checkAction() {
+            const currentParams = new URLSearchParams(window.location.search);
+            const action = currentParams.get('action');
+            if (player && player.getPlayerState) {
+                var state = player.getPlayerState();
+                if (action === 'pause') {
+                    player.pauseVideo();
+                } else if (action === 'play') {
+                    player.playVideo();
+                } else if (action === 'toggle') {
+                    if (state === YT.PlayerState.PLAYING) {
+                        player.pauseVideo();
+                    } else {
+                        player.playVideo();
+                    }
+                }
+            }
+        }
+
+        // Listen for URL changes via LSL reload
+        window.addEventListener('hashchange', checkAction);
     </script>
 </body>
 </html>
